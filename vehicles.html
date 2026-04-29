@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYZEN | Studio</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #171a20;
+            overflow-x: hidden;
+        }
+
+        .blur-nav {
+            backdrop-filter: blur(16px);
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .color-dot {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid transparent;
+            padding: 2px;
+            background-clip: content-box;
+        }
+
+        .color-dot.active {
+            border-color: #171a20;
+            transform: scale(1.1);
+        }
+
+        .vehicle-image-container {
+            transition: opacity 0.5s ease-in-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .model-btn {
+            position: relative;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .model-btn::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #ff5f00; /* Signature Orange underline */
+            transition: width 0.3s;
+        }
+
+        .model-btn.active::after {
+            width: 100%;
+        }
+
+        .model-btn.active {
+            color: #000;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-white">
+
+    <!-- Minimal Nav -->
+    <nav class="fixed top-0 w-full z-50 flex items-center justify-between px-8 md:px-12 py-6 transition-all duration-500 blur-nav">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-black flex items-center justify-center rounded">
+                <span class="text-white font-bold text-lg"><img src="logo.png"></span>
+            </div>
+            <img src="" alt="">
+        </div>
+        
+        <div class="hidden md:flex space-x-12 text-[11px] font-bold uppercase tracking-widest text-gray-400">
+            <span class="model-btn active" onclick="switchModel('s1')">Model S1</span>
+            <span class="model-btn" onclick="switchModel('xtrail')">X-Trail</span>
+            <span class="model-btn" onclick="switchModel('air')">Model Air</span>
+            <span class="model-btn" onclick="switchModel('apex')">Apex</span>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <i class="fa-solid fa-globe text-sm"></i>
+            <i class="fa-solid fa-user text-sm"></i>
+        </div>
+    </nav>
+
+    <!-- Studio Layout -->
+    <main class="min-h-screen flex flex-col lg:flex-row pt-24">
+        
+        <!-- Left Side: Large Image Display -->
+        <div class="flex-1 flex flex-col items-center justify-center p-6 md:p-20 bg-[#f8f8f8] lg:bg-white">
+            <div class="w-full max-w-5xl relative flex items-center justify-center">
+                <img id="main-vehicle" 
+                     src="s2.png" 
+                     alt="Vehicle" 
+                     class="w-full h-auto max-h-[60vh] object-contain vehicle-image-container z-10 relative drop-shadow-2xl">
+            </div>
+            
+            <!-- Specs Overlay -->
+            <div class="mt-12 flex gap-12 md:gap-24 text-center">
+                <div>
+                    <p class="text-2xl md:text-3xl font-light" id="spec-range">405mi</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">Range</p>
+                </div>
+                <div>
+                    <p class="text-2xl md:text-3xl font-light" id="spec-top">155mph</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">Top Speed</p>
+                </div>
+                <div>
+                    <p class="text-2xl md:text-3xl font-light" id="spec-accel">3.1s</p>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">0-60 mph</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Configurator -->
+        <div class="w-full lg:w-[450px] p-8 md:p-16 flex flex-col justify-center">
+            <div class="mb-12">
+                <h1 class="text-5xl font-bold tracking-tight mb-2" id="model-name">Model S1</h1>
+                <p class="text-gray-500 font-medium" id="model-tagline">Premium Electric Performance</p>
+            </div>
+
+            <!-- Color Picker -->
+            <div class="mb-12">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6">Paint Selection</h3>
+                <div class="flex gap-4" id="color-palette">
+                    <!-- Dots generated by JS -->
+                </div>
+                <p class="mt-6 text-sm font-semibold" id="color-name">Solar Orange</p>
+            </div>
+
+            <div class="space-y-4">
+                <button class="w-full bg-[#171a20] text-white py-4 rounded font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-all">Order Custom</button>
+                <button class="w-full bg-gray-100 text-black py-4 rounded font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition-all">Test Drive</button>
+            </div>
+
+            <div class="mt-12 pt-12 border-t border-gray-100 text-[10px] text-gray-400 uppercase tracking-widest text-center">
+                Delivery: 2 - 4 Weeks
+            </div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * VEHICLE DATA CONFIGURATION
+         * Replace the 'img' URLs below with your own car image paths.
+         * For example: img: "my-orange-car.png"
+         */
+        const vehicleData = {
+            s1: {
+                name: "Model S1",
+                tagline: "The Ultimate Grand Tourer",
+                specs: { range: "405mi", top: "155mph", accel: "3.1s" },
+                colors: [
+                    { name: "blue", hex: "#0096FF", img: "s3.png" },
+                    { name: "Crimson Red", hex: "#e81c24", img: "s2.png" },
+                    { name: "Solid Black", hex: "#000000", img: "s1.png" }
+                ]
+            },
+            xtrail: {
+                name: "X-Trail",
+                tagline: "Adventure Utility Vehicle",
+                specs: { range: "380mi", top: "135mph", accel: "4.4s" },
+                colors: [
+                    { name: "Solar Orange", hex: "#ff5f00", img: "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&q=80&w=1600" },
+                    { name: "Crimson Red", hex: "#e81c24", img: "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&q=80&w=1600" },
+                    { name: "Solid Black", hex: "#000000", img: "https://images.unsplash.com/photo-1542362567-b05260b69c4d?auto=format&fit=crop&q=80&w=1600" }
+                ]
+            },
+            air: {
+                name: "Model Air",
+                tagline: "Urban Efficiency",
+                specs: { range: "310mi", top: "120mph", accel: "5.2s" },
+                colors: [
+                    { name: "Solar Orange", hex: "#ff5f00", img: "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&q=80&w=1600" },
+                    { name: "Crimson Red", hex: "#e81c24", img: "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&q=80&w=1600" },
+                    { name: "Solid Black", hex: "#000000", img: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&q=80&w=1600" }
+                ]
+            },
+            apex: {
+                name: "HYZEN Apex",
+                tagline: "Track Focused Performance",
+                specs: { range: "280mi", top: "205mph", accel: "1.9s" },
+                colors: [
+                    { name: "Solar Orange", hex: "#ff5f00", img: "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&q=80&w=1600" },
+                    { name: "Crimson Red", hex: "#e81c24", img: "https://images.unsplash.com/photo-1603584173870-7f320ff85078?auto=format&fit=crop&q=80&w=1600" },
+                    { name: "Solid Black", hex: "#000000", img: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&q=80&w=1600" }
+                ]
+            }
+        };
+
+        let currentModel = 's1';
+
+        function switchModel(modelKey) {
+            currentModel = modelKey;
+            const data = vehicleData[modelKey];
+            
+            // Update UI Text
+            document.getElementById('model-name').innerText = data.name;
+            document.getElementById('model-tagline').innerText = data.tagline;
+            document.getElementById('spec-range').innerText = data.specs.range;
+            document.getElementById('spec-top').innerText = data.specs.top;
+            document.getElementById('spec-accel').innerText = data.specs.accel;
+
+            // Update Navigation state
+            document.querySelectorAll('.model-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.innerText.toLowerCase().includes(modelKey.replace('model', '').trim())) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Build palette
+            const palette = document.getElementById('color-palette');
+            palette.innerHTML = '';
+            data.colors.forEach((color, index) => {
+                const dot = document.createElement('div');
+                dot.className = `color-dot ${index === 0 ? 'active' : ''}`;
+                dot.style.backgroundColor = color.hex;
+                dot.onclick = () => updateColor(index);
+                palette.appendChild(dot);
+            });
+
+            updateColor(0);
+        }
+
+        function updateColor(index) {
+            const data = vehicleData[currentModel];
+            const color = data.colors[index];
+            const imgEl = document.getElementById('main-vehicle');
+            
+            // Update active dot UI
+            document.querySelectorAll('.color-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === index);
+            });
+
+            // Animate transition
+            imgEl.style.opacity = '0';
+            imgEl.style.transform = 'scale(0.98) translateY(10px)';
+            
+            document.getElementById('color-name').innerText = color.name;
+
+            // Preload and Swap
+            const tempImg = new Image();
+            tempImg.src = color.img;
+            tempImg.onload = () => {
+                imgEl.src = color.img;
+                imgEl.style.opacity = '1';
+                imgEl.style.transform = 'scale(1) translateY(0)';
+            };
+        }
+
+        window.onload = () => switchModel('s1');
+    </script>
+</body>
+</html>

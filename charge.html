@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYZEN | Global Charging Network</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+            background-color: #ffffff;
+            color: #171a20;
+        }
+
+        .blur-nav {
+            backdrop-filter: blur(16px);
+            background-color: rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s ease-out;
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* White Map Container Styling */
+        #map-container {
+            width: 100%;
+            height: 600px;
+            background: radial-gradient(circle at center, #f8f9fa 0%, #ffffff 100%);
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            border: 1px solid #eeeeee;
+        }
+
+        .charging-dot {
+            fill: #e81c24;
+            filter: drop-shadow(0 0 4px rgba(232, 28, 36, 0.6));
+        }
+
+        .pulse {
+            stroke: #e81c24;
+            stroke-width: 1.5px;
+            fill: none;
+            opacity: 0;
+        }
+
+        .map-land {
+            fill: #e5e7eb;
+            stroke: #ffffff;
+            stroke-width: 1px;
+        }
+
+        /* Stats Card Overlay - Glassmorphism */
+        .stats-overlay {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 24px;
+            border-radius: 20px;
+            color: #171a20;
+            z-index: 10;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #ffffff; }
+        ::-webkit-scrollbar-thumb { background: #e2e2e2; border-radius: 10px; }
+        
+        .hero-title {
+            color: #171a20;
+            line-height: 1.1;
+        }
+
+        .btn-black {
+            background-color: #171a20;
+            color: white;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 flex items-center justify-between px-12 py-5 transition-all duration-500" id="navbar">
+        <div class="flex items-center">
+            <a href="#" class="flex items-center gap-3">
+                <img src="hyzenrm.png" alt="HYZEN" class="h-10" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                <span style="display:none" class="font-bold tracking-widest text-2xl text-black">HYZEN</span>
+            </a>
+        </div>
+        
+        <div class="hidden lg:flex space-x-10 font-semibold text-[13px] uppercase tracking-widest text-[#393c41]">
+            <a href="#map-section" class="hover:text-black transition-all">Live Network</a>
+            <a href="#hardware" class="hover:text-black transition-all">Hardware</a>
+            <a href="#" class="hover:text-black transition-all">Planning</a>
+            <a href="#" class="hover:text-black transition-all">Support</a>
+        </div>
+
+        <div class="flex items-center space-x-6">
+            <button class="bg-black/5 text-black px-6 py-2 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-black/10 transition-all">Find Us</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative h-[90vh] w-full flex flex-col items-center justify-center text-center px-6 bg-white">
+        <div class="reveal active">
+            <h1 class="hero-title text-6xl md:text-8xl font-bold tracking-tighter mb-6">Global Charging<br><span class="text-[#e81c24]">Infrastructure.</span></h1>
+            <p class="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto font-normal leading-relaxed mb-10">
+                A seamless network of ultra-fast charging stations designed to keep you moving. 12,000+ locations, zero complexity.
+            </p>
+            <div class="flex flex-col md:flex-row gap-4 justify-center">
+                <button class="btn-black px-12 py-3 rounded font-bold text-xs uppercase tracking-widest shadow-lg">Order Connector</button>
+                <button class="bg-black/5 px-12 py-3 rounded font-bold text-xs uppercase tracking-widest">Find a Station</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Map Section -->
+    <section id="map-section" class="py-24 px-6 md:px-10 bg-[#fdfdfd]">
+        <div class="max-w-screen-2xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6 reveal">
+                <div>
+                    <h2 class="text-4xl font-bold text-[#171a20]">Network Density</h2>
+                    <p class="text-gray-500 mt-3 text-lg">Visualizing real-time connectivity across our global footprint.</p>
+                </div>
+                <div class="flex items-center gap-6 text-xs font-bold uppercase tracking-widest text-[#393c41]">
+                    <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#e81c24] animate-pulse"></span> Active Terminal</span>
+                    <span class="flex items-center gap-2 text-gray-400"><span class="w-3 h-3 rounded-full bg-gray-200"></span> Planned</span>
+                </div>
+            </div>
+
+            <div id="map-container" class="reveal shadow-xl">
+                <div class="stats-overlay hidden md:block">
+                    <div class="mb-6">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Global Load</p>
+                        <p class="text-3xl font-bold text-[#171a20]">84% <span class="text-green-500 text-sm ml-2">▲ 2%</span></p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Fleet Uptime</p>
+                        <p class="text-3xl font-bold text-[#171a20]">99.9%</p>
+                    </div>
+                </div>
+                <svg id="network-map"></svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hardware Showcase -->
+    <section id="hardware" class="py-32 px-6 md:px-10 bg-white">
+        <div class="max-w-screen-2xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                <!-- Station 1 -->
+                <div class="reveal group" style="transition-delay: 0.1s">
+                    <div class="aspect-[4/5] bg-gray-50 rounded-2xl overflow-hidden mb-8 border border-gray-100">
+                        <img src="charge1.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.src='https://images.unsplash.com/photo-1593941707882-a5bba1491017?auto=format&fit=crop&q=80&w=600'">
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">UltraCharge V4</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed mb-6">Next-generation architecture delivering 350kW+ power for rapid turnaround.</p>
+                    <a href="#" class="text-xs font-bold uppercase tracking-widest border-b-2 border-black pb-1 hover:text-[#e81c24] hover:border-[#e81c24] transition-all">Details</a>
+                </div>
+
+                <!-- Station 2 -->
+                <div class="reveal group" style="transition-delay: 0.2s">
+                    <div class="aspect-[4/5] bg-gray-50 rounded-2xl overflow-hidden mb-8 border border-gray-100">
+                        <img src="charge2.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.src='https://images.unsplash.com/photo-1620311317135-90176865239a?auto=format&fit=crop&q=80&w=600'">
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Destination Hub</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed mb-6">Designed for commerce and hospitality. Integrate charging into your business.</p>
+                    <a href="#" class="text-xs font-bold uppercase tracking-widest border-b-2 border-black pb-1 hover:text-[#e81c24] hover:border-[#e81c24] transition-all">Partnerships</a>
+                </div>
+
+                <!-- Station 3 -->
+                <div class="reveal group" style="transition-delay: 0.3s">
+                    <div class="aspect-[4/5] bg-gray-50 rounded-2xl overflow-hidden mb-8 border border-gray-100">
+                        <img src="charge3.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.src='https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?auto=format&fit=crop&q=80&w=600'">
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Home Connector</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed mb-6">Full-speed residential charging. Start every morning with a full battery.</p>
+                    <a href="#" class="text-xs font-bold uppercase tracking-widest border-b-2 border-black pb-1 hover:text-[#e81c24] hover:border-[#e81c24] transition-all">Buy Now</a>
+                </div>
+
+                <!-- Station 4 -->
+                <div class="reveal group" style="transition-delay: 0.4s">
+                    <div class="aspect-[4/5] bg-gray-50 rounded-2xl overflow-hidden mb-8 border border-gray-100">
+                        <img src="charge4.png" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onerror="this.src='https://images.unsplash.com/photo-1506461883276-594a12b11cf3?auto=format&fit=crop&q=80&w=600'">
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Solar Grid</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed mb-6">Clean energy collection for independent off-grid charging solutions.</p>
+                    <a href="#" class="text-xs font-bold uppercase tracking-widest border-b-2 border-black pb-1 hover:text-[#e81c24] hover:border-[#e81c24] transition-all">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white text-[#171a20] border-t border-gray-100 pt-24 pb-12">
+        <div class="max-w-screen-2xl mx-auto px-10">
+            <div class="flex flex-col md:flex-row justify-between items-start gap-12 mb-20">
+                <div class="max-w-xs">
+                    <div class="h-8 mb-8">
+                        <img src="logo.png" class="h-full" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                        <span style="display:none" class="font-bold text-2xl tracking-tighter">HYZEN</span>
+                    </div>
+                    <p class="text-gray-500 text-sm leading-relaxed">Pioneering sustainable mobility through the world's most advanced charging infrastructure.</p>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-16">
+                    <div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest mb-6">Network</h4>
+                        <ul class="text-gray-500 text-xs space-y-4 font-medium">
+                            <li><a href="#" class="hover:text-black transition-colors">Map</a></li>
+                            <li><a href="#" class="hover:text-black transition-colors">Superchargers</a></li>
+                            <li><a href="#" class="hover:text-black transition-colors">Hosts</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest mb-6">Company</h4>
+                        <ul class="text-gray-500 text-xs space-y-4 font-medium">
+                            <li><a href="#" class="hover:text-black transition-colors">About</a></li>
+                            <li><a href="#" class="hover:text-black transition-colors">Careers</a></li>
+                            <li><a href="#" class="hover:text-black transition-colors">News</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest mb-6">Support</h4>
+                        <ul class="text-gray-500 text-xs space-y-4 font-medium">
+                            <li><a href="#" class="hover:text-black transition-colors">FAQ</a></li>
+                            <li><a href="#" class="hover:text-black transition-colors">Contact</a></li>
+                            <li><a href="#" class="hover:text-black transition-colors">Legal</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col md:flex-row justify-between items-center pt-10 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span>HYZEN © 2026</span>
+                <div class="flex gap-8 mt-6 md:mt-0">
+                    <a href="#" class="hover:text-black transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-black transition-colors">Terms</a>
+                    <a href="#" class="hover:text-black transition-colors">Fleet Status</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // D3.js Map Simulation - White Theme
+        function initMap() {
+            const container = document.getElementById('map-container');
+            const width = container.clientWidth;
+            const height = 600;
+            const svg = d3.select("#network-map")
+                .attr("width", width)
+                .attr("height", height);
+
+            const projection = d3.geoMercator()
+                .scale(width / 6.2)
+                .translate([width / 2, height / 1.55]);
+
+            const path = d3.geoPath().projection(projection);
+
+            d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(data => {
+                const countries = topojson.feature(data, data.objects.countries);
+
+                svg.append("g")
+                    .selectAll("path")
+                    .data(countries.features)
+                    .enter().append("path")
+                    .attr("d", path)
+                    .attr("class", "map-land");
+
+                // Realistic Density Clusters (Europe, US, East Asia)
+                const stations = [];
+                for(let i=0; i<200; i++) {
+                    let lon, lat;
+                    const r = Math.random();
+                    if(r < 0.4) { // North America
+                        lon = -120 + Math.random() * 50; lat = 30 + Math.random() * 15;
+                    } else if (r < 0.7) { // Europe
+                        lon = -10 + Math.random() * 40; lat = 40 + Math.random() * 15;
+                    } else { // Asia
+                        lon = 100 + Math.random() * 40; lat = 20 + Math.random() * 20;
+                    }
+                    stations.push({ id: i, coords: [lon, lat] });
+                }
+
+                const dots = svg.append("g")
+                    .selectAll("circle")
+                    .data(stations)
+                    .enter().append("g");
+
+                dots.append("circle")
+                    .attr("cx", d => projection(d.coords)[0])
+                    .attr("cy", d => projection(d.coords)[1])
+                    .attr("r", 2.2)
+                    .attr("class", "charging-dot");
+
+                function animatePulse() {
+                    const randomDot = stations[Math.floor(Math.random() * stations.length)];
+                    const [cx, cy] = projection(randomDot.coords);
+
+                    svg.append("circle")
+                        .attr("cx", cx)
+                        .attr("cy", cy)
+                        .attr("r", 3)
+                        .attr("class", "pulse")
+                        .transition()
+                        .duration(2400)
+                        .attr("r", 18)
+                        .style("opacity", 0)
+                        .remove();
+                }
+
+                setInterval(animatePulse, 400);
+            });
+        }
+
+        const topojsonScript = document.createElement('script');
+        topojsonScript.src = "https://unpkg.com/topojson@3";
+        topojsonScript.onload = initMap;
+        document.head.appendChild(topojsonScript);
+
+        const navbar = document.getElementById('navbar');
+        window.onscroll = function() {
+            if (window.scrollY > 50) {
+                navbar.classList.add('blur-nav');
+                navbar.style.padding = '12px 48px';
+            } else {
+                navbar.classList.remove('blur-nav');
+                navbar.style.padding = '20px 48px';
+            }
+            reveal(); 
+        };
+
+        function reveal() {
+            const reveals = document.querySelectorAll(".reveal");
+            reveals.forEach(element => {
+                const windowHeight = window.innerHeight;
+                const elementTop = element.getBoundingClientRect().top;
+                if (elementTop < windowHeight - 100) {
+                    element.classList.add("active");
+                }
+            });
+        }
+
+        window.addEventListener('load', reveal);
+    </script>
+</body>
+</html>
